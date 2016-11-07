@@ -9,9 +9,11 @@
 #if os(iOS)
     import UIKit
     public typealias Color = UIColor
+    public typealias Image = UIImage
 #elseif os(OSX)
     import Cocoa
     public typealias Color = NSColor
+    public typealias Image = NSImage
 #endif
 
 public func ==(lhs: Color, rhs: Color) -> Bool{
@@ -48,7 +50,7 @@ public extension Color {
         var mAlpha: CGFloat = CGFloat(alpha)
         var minusLength = 0
         
-        let scanner = NSScanner(string: hexString)
+        let scanner = Scanner(string: hexString)
         
         if hexString.hasPrefix("#") {
             scanner.scanLocation = 1
@@ -59,7 +61,7 @@ public extension Color {
             minusLength = 2
         }
         var hexValue: UInt64 = 0
-        scanner.scanHexLongLong(&hexValue)
+        scanner.scanHexInt64(&hexValue)
         switch hexString.characters.count - minusLength {
         case 3:
             red = CGFloat((hexValue & 0xF00) >> 8) / 15.0
@@ -90,22 +92,22 @@ public extension Color {
         self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: CGFloat(alpha))
     }
     
-    public func alpha(value: Float) -> Color {
+    public func alpha(_ value: Float) -> Color {
         let (red, green, blue, _) = colorComponents()
         return Color(red: red, green: green, blue: blue, alpha: CGFloat(value))
     }
     
-    public func red(value: Int) -> Color {
+    public func red(_ value: Int) -> Color {
         let (_, green, blue, alpha) = colorComponents()
         return Color(red: CGFloat(value)/255.0, green: green, blue: blue, alpha: alpha)
     }
     
-    public func green(value: Int) -> Color {
+    public func green(_ value: Int) -> Color {
         let (red, _, blue, alpha) = colorComponents()
         return Color(red: red, green: CGFloat(value)/255.0, blue: blue, alpha: alpha)
     }
     
-    public func blue(value: Int) -> Color {
+    public func blue(_ value: Int) -> Color {
         let (red, green, _, alpha) = colorComponents()
         return Color(red: red, green: green, blue: CGFloat(value)/255.0, alpha: alpha)
     }
@@ -118,73 +120,9 @@ public extension Color {
         #if os(iOS)
             self.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
         #elseif os(OSX)
-            self.colorUsingColorSpaceName(NSCalibratedRGBColorSpace)!.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            self.usingColorSpaceName(NSCalibratedRGBColorSpace)!.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
         #endif
         return (red, green, blue, alpha)
-    }
-    
-}
-
-public extension Color {
-    
-    public class var black: Color {
-        return self.blackColor()
-    }
-    
-    public class var darkGray: Color {
-        return self.darkGrayColor()
-    }
-    
-    public class var lightGray: Color {
-        return self.lightGrayColor()
-    }
-    
-    public class var white: Color {
-        return self.whiteColor()
-    }
-    
-    public class var gray: Color {
-        return self.grayColor()
-    }
-    
-    public class var red: Color {
-        return self.redColor()
-    }
-    
-    public class var green: Color {
-        return self.greenColor()
-    }
-    
-    public class var blue: Color {
-        return self.blueColor()
-    }
-    
-    public class var cyan: Color {
-        return self.cyanColor()
-    }
-    
-    public class var yellow: Color {
-        return self.yellowColor()
-    }
-    
-    public class var magenta: Color {
-        return self.magentaColor()
-    }
-    
-    public class var orange: Color {
-        return self.orangeColor()
-    }
-    
-    public class var purple: Color {
-        return self.purpleColor()
-    }
-    
-    public class var brown: Color {
-        return self.brownColor()
-    }
-    
-    public class var clear: Color {
-        return self.clearColor()
     }
     
 }
@@ -207,14 +145,22 @@ public extension Int {
 
 public extension Color {
     
-    public func toImage(size: CGSize = CGSize(width: 1, height: 1)) -> UIImage {
-        let rect = CGRectMake(0, 0, size.width, size.height)
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-        self.setFill()
-        UIRectFill(rect)
-        let image: UIImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return image
+    public func toImage(size: CGSize = CGSize(width: 1, height: 1)) -> Image? {
+        #if os(iOS)
+            let rect = CGRect(x: 0, y: 0, width: size.width, height: size.height)
+            UIGraphicsBeginImageContextWithOptions(size, false, 0)
+            self.setFill()
+            UIRectFill(rect)
+            let image: UIImage? = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            return image
+        #elseif os(OSX)
+            let image = NSImage(size: size)
+            image.lockFocus()
+            drawSwatch(in: NSMakeRect(0, 0, size.width, size.height))
+            image.unlockFocus()
+            return image
+        #endif
     }
     
 }
